@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="jp">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Speech API Example</title>
+    <script type="module" defer src="dist/index.js"></script>
+</head>
+<body>
+    <div>
+        <label for="conversationCount">会話の取得個数:</label>
+        <input type="number" id="conversationCount" value="1">
+    </div>
+    <div>
+        <label for="apiToken">APIトークン:</label>
+        <input type="text" id="apiToken">
+    </div>
+    <div>
+        <label for="systemRole">ロールプレイ指示:</label>
+        <input type="text" id="systemRole">
+    </div>
+    <button id="toggleButton">会話を開始する</button>
+    <div>
+        <br>
+    </div>
+    <div id="transcripts"></div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "SimpleWebVirtualAssistant",
+  "packageManager": "yarn@4.0.0-rc.50",
+  "volta": {
+    "node": "18.17.1"
+  },
+  "dependencies": {
+    "lite-server": "^2.6.1",
+    "tsc": "^2.0.4",
+    "typescript": "^5.2.2"
+  },
+  "scripts": {
+    "start": "lite-server"
+  }
+
+}
