@@ -5,18 +5,19 @@ console.log("start script");
 const toggleButton = document.getElementById("toggleButton") as HTMLButtonElement;
 const transcripts = document.getElementById("transcripts") as HTMLDivElement;
 const conversationCountInput = document.getElementById("conversationCount") as HTMLInputElement;
-const apiTokenInput = document.getElementById("apiToken") as HTMLInputElement ;
+const apiTokenInput = document.getElementById("apiToken") as HTMLTextAreaElement ;
 const systemRoleInput = document.getElementById("systemRole") as HTMLInputElement ;
+const startSoundElement = document.getElementById("startSound") as HTMLAudioElement;
 
 const DEFAULT_CONVERSATION_COUNT = 10;
 conversationCountInput.value = DEFAULT_CONVERSATION_COUNT.toString();
 
-const DEFAULT_SYSTEM_ROLE = "You are the user's friend. Your responses should be approximately 50 words or less and use correct grammar.";
+const DEFAULT_SYSTEM_ROLE = "You are the user's friend. Your responses should be 30 words or less and use correct grammar.";
 systemRoleInput.value=DEFAULT_SYSTEM_ROLE;
 
 declare const window:any
 
-let isListening = false;
+let isStarted = false;
 // let recognition: SpeechRecognition;
 let recognition: any;
 let speech: SpeechSynthesis;
@@ -46,6 +47,7 @@ function startRecognition() {
             role:"user",
             content:transcript
         })
+        recognition.stop();
 
         const apiToken = apiTokenInput.value;
 
@@ -63,16 +65,22 @@ function startRecognition() {
         // Speak API response
         speechUtterance = new SpeechSynthesisUtterance(apiResponse);
         speechUtterance.lang = "en-US";
+        speechUtterance.onend = () => {
+            // 読み上げが終了したら音声認識を再開
+            startRecognition();
+        };
+
         speech.speak(speechUtterance);
     });
 
-    recognition.addEventListener('end', () => {
-        if (isListening) {
-            recognition.start();
-        }
-    });
+    // recognition.addEventListener('end', () => {
+    //     if (isStarted) {
+    //         recognition.start();
+    //     }
+    // });
 
     recognition.start();
+    startSoundElement.play();
 }
 
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
@@ -126,6 +134,7 @@ function createQueryMessage(){
 
     const queryList = getLastNTranscripts(n)
     queryList.unshift(systemRole)
+    console.log(queryList)
     return queryList
 }
 
@@ -141,12 +150,12 @@ function stopRecognition() {
 
 toggleButton.addEventListener("click", () => {
     console.log("button pressed");
-    if (isListening) {
-        isListening = false;
+    if (isStarted) {
+        isStarted = false;
         stopRecognition();
         toggleButton.textContent = "会話を開始する";
     } else {
-        isListening = true;
+        isStarted = true;
         speech = window.speechSynthesis;
         startRecognition();
         toggleButton.textContent = "会話を終了する";

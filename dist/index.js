@@ -13,11 +13,12 @@ const transcripts = document.getElementById("transcripts");
 const conversationCountInput = document.getElementById("conversationCount");
 const apiTokenInput = document.getElementById("apiToken");
 const systemRoleInput = document.getElementById("systemRole");
+const startSoundElement = document.getElementById("startSound");
 const DEFAULT_CONVERSATION_COUNT = 10;
 conversationCountInput.value = DEFAULT_CONVERSATION_COUNT.toString();
-const DEFAULT_SYSTEM_ROLE = "You are the user's friend. Your responses should be approximately 50 words or less and use correct grammar.";
+const DEFAULT_SYSTEM_ROLE = "You are the user's friend. Your responses should be 30 words or less and use correct grammar.";
 systemRoleInput.value = DEFAULT_SYSTEM_ROLE;
-let isListening = false;
+let isStarted = false;
 // let recognition: SpeechRecognition;
 let recognition;
 let speech;
@@ -36,6 +37,7 @@ function startRecognition() {
             role: "user",
             content: transcript
         });
+        recognition.stop();
         const apiToken = apiTokenInput.value;
         const apiResponse = yield inquireToChatGPT(createQueryMessage(), apiToken);
         // Display API response
@@ -48,14 +50,19 @@ function startRecognition() {
         // Speak API response
         speechUtterance = new SpeechSynthesisUtterance(apiResponse);
         speechUtterance.lang = "en-US";
+        speechUtterance.onend = () => {
+            // 読み上げが終了したら音声認識を再開
+            startRecognition();
+        };
         speech.speak(speechUtterance);
     }));
-    recognition.addEventListener('end', () => {
-        if (isListening) {
-            recognition.start();
-        }
-    });
+    // recognition.addEventListener('end', () => {
+    //     if (isStarted) {
+    //         recognition.start();
+    //     }
+    // });
     recognition.start();
+    startSoundElement.play();
 }
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 function inquireToChatGPT(messages, token) {
@@ -106,6 +113,7 @@ function createQueryMessage() {
     };
     const queryList = getLastNTranscripts(n);
     queryList.unshift(systemRole);
+    console.log(queryList);
     return queryList;
 }
 // n個前の会話までを取得する関数
@@ -118,13 +126,13 @@ function stopRecognition() {
 }
 toggleButton.addEventListener("click", () => {
     console.log("button pressed");
-    if (isListening) {
-        isListening = false;
+    if (isStarted) {
+        isStarted = false;
         stopRecognition();
         toggleButton.textContent = "会話を開始する";
     }
     else {
-        isListening = true;
+        isStarted = true;
         speech = window.speechSynthesis;
         startRecognition();
         toggleButton.textContent = "会話を終了する";
