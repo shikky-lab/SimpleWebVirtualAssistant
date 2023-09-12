@@ -1,0 +1,33 @@
+.chat-container {
+    width: 100%;
+    /* max-width: 600px; */
+    margin: 0 auto;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.chat-message {
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+}
+
+.chat-message.user-message .label,
+.chat-message.ai-message .label {
+    font-weight: bold;
+}
+
+.chat-message.user-message .text {
+    background-color: #e9ecef;
+    margin-right: auto; /* 左に寄せる */
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.chat-message.ai-message .text {
+    background-color: #007bff;
+    color: white;
+    margin-left: auto; /* 右に寄せる */
+    padding: 10px;
+    border-radius: 5px;
+}

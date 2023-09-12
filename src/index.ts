@@ -31,6 +31,43 @@ type MessageType = {
 };
 let transcriptList:MessageType[]=[];
 
+function appendMessageToChat(role, labelContent, messageText) {
+    const chatContainer = document.querySelector('.chat-container');
+    const messageDiv = document.createElement('div');
+    const labelSpan = document.createElement('span');
+    const textSpan = document.createElement('span');
+
+    labelSpan.textContent = labelContent;
+    labelSpan.classList.add('label');
+
+    textSpan.textContent = messageText;
+    textSpan.classList.add('text');
+
+    messageDiv.classList.add('chat-message');
+
+    if (role === 'user') {
+        messageDiv.classList.add('user-message');
+        messageDiv.appendChild(labelSpan);
+        messageDiv.appendChild(textSpan);
+    } else if (role === 'ai') {
+        messageDiv.classList.add('ai-message');
+        messageDiv.appendChild(textSpan);
+        messageDiv.appendChild(labelSpan);
+    }
+
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function addUserMessage(message) {
+    appendMessageToChat('user', 'YOU: ', message);
+}
+
+function addAIMessage(message) {
+    appendMessageToChat('ai', ' :AI', message);
+}
+
+
 function startRecognition() {
     const SpeechRecognition = window.speechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition();
@@ -40,8 +77,7 @@ function startRecognition() {
     recognition.addEventListener('result', async(event) => {
         const transcript = event.results[0][0].transcript;
 
-        // Display user input
-        transcripts.innerHTML += `<div>YOU：${transcript}</div>`;
+        addUserMessage(transcript);
 
         transcriptList.push({
             role:"user",
@@ -53,8 +89,7 @@ function startRecognition() {
 
         const apiResponse = await inquireToChatGPT(createQueryMessage(),apiToken);
 
-        // Display API response
-        transcripts.innerHTML += `<div>AI：${apiResponse}</div>`;
+        addAIMessage(apiResponse);
 
         // トランスクリプトの内容を配列に追加
         transcriptList.push({
@@ -73,11 +108,18 @@ function startRecognition() {
         speech.speak(speechUtterance);
     });
 
-    // recognition.addEventListener('end', () => {
-    //     if (isStarted) {
-    //         recognition.start();
-    //     }
-    // });
+    recognition.addEventListener("error", (event) => {
+        if (event.error === 'no-speech') {
+           //こうやって書けばno-speechだけ検出できるが、ひとまずはどのエラーでも会話を止める。
+        }
+        console.error(`音声認識エラーが発生しました: ${event.error}`);
+        stopConversation();
+    });
+    recognition.addEventListener('end', () => {
+        // if (isStarted) {
+        //     recognition.start();
+        // }
+    });
 
     recognition.start();
     startSoundElement.play();
@@ -119,6 +161,8 @@ async function inquireToChatGPT(messages:MessageType[],token:string){
         else{
             console.log("There was a problem with the fetch operation:", error.message);
         }
+
+        stopConversation();
     }
 }
 
@@ -148,17 +192,29 @@ function stopRecognition() {
     recognition = null!;
 }
 
-toggleButton.addEventListener("click", () => {
+function startConversation(){
+    isStarted = true;
+    speech = window.speechSynthesis;
+    startRecognition();
+    toggleButton.textContent = "会話を終了する";
+    toggleButton.classList.remove('btn-primary');
+    toggleButton.classList.add('btn-danger');
+}
+
+function stopConversation(){
+    isStarted = false;
+    stopRecognition();
+    toggleButton.textContent = "会話を開始する";
+    toggleButton.classList.remove('btn-danger');
+    toggleButton.classList.add('btn-primary');
+}
+
+toggleButton.addEventListener("click", (event) => {
     console.log("button pressed");
     if (isStarted) {
-        isStarted = false;
-        stopRecognition();
-        toggleButton.textContent = "会話を開始する";
+        stopConversation();
     } else {
-        isStarted = true;
-        speech = window.speechSynthesis;
-        startRecognition();
-        toggleButton.textContent = "会話を終了する";
+        startConversation();
     }
 });
 
