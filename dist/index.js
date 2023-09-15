@@ -20,40 +20,14 @@ const DEFAULT_SYSTEM_ROLE = "You are the user's friend. Your responses should be
 systemRoleInput.value = DEFAULT_SYSTEM_ROLE;
 let isStarted = false;
 // let recognition: SpeechRecognition;
-let recognition;
+let recognition = null;
 let speech;
 let speechUtterance;
 let transcriptList = [];
-function appendMessageToChat(role, labelContent, messageText) {
-    const chatContainer = document.querySelector('.chat-container');
-    const messageDiv = document.createElement('div');
-    const labelSpan = document.createElement('span');
-    const textSpan = document.createElement('span');
-    labelSpan.textContent = labelContent;
-    labelSpan.classList.add('label');
-    textSpan.textContent = messageText;
-    textSpan.classList.add('text');
-    messageDiv.classList.add('chat-message');
-    if (role === 'user') {
-        messageDiv.classList.add('user-message');
-        messageDiv.appendChild(labelSpan);
-        messageDiv.appendChild(textSpan);
+function setupRecognitionIfNeeded() {
+    if (recognition) {
+        return;
     }
-    else if (role === 'ai') {
-        messageDiv.classList.add('ai-message');
-        messageDiv.appendChild(textSpan);
-        messageDiv.appendChild(labelSpan);
-    }
-    chatContainer.appendChild(messageDiv);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-}
-function addUserMessage(message) {
-    appendMessageToChat('user', 'YOU: ', message);
-}
-function addAIMessage(message) {
-    appendMessageToChat('ai', ' :AI', message);
-}
-function startRecognition() {
     const SpeechRecognition = window.speechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition();
     recognition.lang = "en-US";
@@ -95,6 +69,38 @@ function startRecognition() {
         //     recognition.start();
         // }
     });
+}
+function appendMessageToChat(role, labelContent, messageText) {
+    const chatContainer = document.querySelector('.chat-container');
+    const messageDiv = document.createElement('div');
+    const labelSpan = document.createElement('span');
+    const textSpan = document.createElement('span');
+    labelSpan.textContent = labelContent;
+    labelSpan.classList.add('label');
+    textSpan.textContent = messageText;
+    textSpan.classList.add('text');
+    messageDiv.classList.add('chat-message');
+    if (role === 'user') {
+        messageDiv.classList.add('user-message');
+        messageDiv.appendChild(labelSpan);
+        messageDiv.appendChild(textSpan);
+    }
+    else if (role === 'ai') {
+        messageDiv.classList.add('ai-message');
+        messageDiv.appendChild(textSpan);
+        messageDiv.appendChild(labelSpan);
+    }
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+function addUserMessage(message) {
+    appendMessageToChat('user', 'YOU: ', message);
+}
+function addAIMessage(message) {
+    appendMessageToChat('ai', ' :AI', message);
+}
+function startRecognition() {
+    setupRecognitionIfNeeded();
     recognition.start();
     startSoundElement.play();
 }
@@ -191,4 +197,7 @@ class ResponseError extends Error {
         Object.setPrototypeOf(this, ResponseError.prototype);
     }
 }
+document.addEventListener("DOMContentLoaded", function () {
+    setupRecognitionIfNeeded();
+});
 export {};
