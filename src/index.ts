@@ -1,4 +1,6 @@
 import IWindow from "./i-window";
+import * as Bootstrap from 'bootstrap';
+
 
 console.log("start script");
 
@@ -10,12 +12,11 @@ const systemRoleInput = document.getElementById("systemRole") as HTMLInputElemen
 const startSoundElement = document.getElementById("startSound") as HTMLAudioElement;
 
 const DEFAULT_CONVERSATION_COUNT = 10;
-conversationCountInput.value = DEFAULT_CONVERSATION_COUNT.toString();
 
 const DEFAULT_SYSTEM_ROLE = "You are the user's friend. Your responses should be 30 words or less and use correct grammar.";
-systemRoleInput.value=DEFAULT_SYSTEM_ROLE;
 
-declare const window:any
+declare const window:any;
+declare var bootstrap: typeof Bootstrap;
 
 let isStarted = false;
 // let recognition: SpeechRecognition;
@@ -125,10 +126,18 @@ function addAIMessage(message) {
     appendMessageToChat('ai', ' :AI', message);
 }
 
-function startRecognition() {
+function playAudio(audio){
+  return new Promise(res=>{
+    audio.play()
+    audio.onended = res
+  })
+}
+
+
+async function startRecognition() {
     setupRecognitionIfNeeded();
     recognition.start();
-    startSoundElement.play();
+    await playAudio(startSoundElement);
 }
 
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
@@ -149,7 +158,7 @@ async function inquireToChatGPT(messages:MessageType[],token:string){
 
 
         if (!response.ok) {
-        throw new Error("Network response was not ok");
+            throw new Error("Network response was not ok");
         }
 
         const data = await response.json();
@@ -162,13 +171,16 @@ async function inquireToChatGPT(messages:MessageType[],token:string){
     } catch (error) {
         if (error  instanceof ResponseError){
             console.log("received response is wrong", error.message);
-            console.log(error.response);
+            showToastMessage("received response is wrong.message="+error.message);
         }
         else{
             console.log("There was a problem with the fetch operation:", error.message);
+            showToastMessage("There was a problem with the fetch operation. message="+error.message);
         }
 
         stopConversation();
+
+        return ""
     }
 }
 
@@ -198,7 +210,8 @@ function stopRecognition() {
     recognition = null!;
 }
 
-function startConversation(){
+async function startConversation(){
+
     isStarted = true;
     speech = window.speechSynthesis;
     startRecognition();
@@ -216,10 +229,16 @@ function stopConversation(){
 }
 
 toggleButton.addEventListener("click", (event) => {
-    console.log("button pressed");
     if (isStarted) {
         stopConversation();
     } else {
+        saveInputs();
+
+        const apiToken = apiTokenInput.value;
+        if (!apiToken) {
+            showToastMessage("There is no API token. Please enter your API token.");
+            return;
+        }
         startConversation();
     }
 });
@@ -236,6 +255,30 @@ class ResponseError extends Error {
   }
 }
 
+function showToastMessage(message) {
+    const toastElement = document.querySelector('.toast');
+    const toastBody = toastElement.querySelector('.toast-body');
+    const toast = new bootstrap.Toast(toastElement);
+    toastBody.textContent = message;  // ここでメッセージを設定します
+    toast.show();
+}
+
+
+
+function saveInputs(){
+    localStorage.setItem("apiToken",apiTokenInput.value);
+    localStorage.setItem("systemRole",systemRoleInput.value);
+    localStorage.setItem("conversationCount",conversationCountInput.value);
+}
+
+function loadPreviousInputs(){
+    apiTokenInput.value = localStorage.getItem("apiToken") || "";
+    // systemRoleInput.value = localStorage.getItem("systemRole") || DEFAULT_SYSTEM_ROLE;
+    systemRoleInput.value =  DEFAULT_SYSTEM_ROLE;
+    conversationCountInput.value = localStorage.getItem("conversationCount") || DEFAULT_CONVERSATION_COUNT.toString();
+}
+
 document.addEventListener("DOMContentLoaded", function() {
+    loadPreviousInputs();
     setupRecognitionIfNeeded();
 });

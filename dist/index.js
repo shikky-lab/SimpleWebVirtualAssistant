@@ -15,9 +15,7 @@ const apiTokenInput = document.getElementById("apiToken");
 const systemRoleInput = document.getElementById("systemRole");
 const startSoundElement = document.getElementById("startSound");
 const DEFAULT_CONVERSATION_COUNT = 10;
-conversationCountInput.value = DEFAULT_CONVERSATION_COUNT.toString();
 const DEFAULT_SYSTEM_ROLE = "You are the user's friend. Your responses should be 30 words or less and use correct grammar.";
-systemRoleInput.value = DEFAULT_SYSTEM_ROLE;
 let isStarted = false;
 // let recognition: SpeechRecognition;
 let recognition = null;
@@ -99,10 +97,18 @@ function addUserMessage(message) {
 function addAIMessage(message) {
     appendMessageToChat('ai', ' :AI', message);
 }
+function playAudio(audio) {
+    return new Promise(res => {
+        audio.play();
+        audio.onended = res;
+    });
+}
 function startRecognition() {
-    setupRecognitionIfNeeded();
-    recognition.start();
-    startSoundElement.play();
+    return __awaiter(this, void 0, void 0, function* () {
+        setupRecognitionIfNeeded();
+        recognition.start();
+        yield playAudio(startSoundElement);
+    });
 }
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 function inquireToChatGPT(messages, token) {
@@ -135,12 +141,14 @@ function inquireToChatGPT(messages, token) {
         catch (error) {
             if (error instanceof ResponseError) {
                 console.log("received response is wrong", error.message);
-                console.log(error.response);
+                showToastMessage("received response is wrong.message=" + error.message);
             }
             else {
                 console.log("There was a problem with the fetch operation:", error.message);
+                showToastMessage("There was a problem with the fetch operation. message=" + error.message);
             }
             stopConversation();
+            return "";
         }
     });
 }
@@ -166,12 +174,14 @@ function stopRecognition() {
     recognition = null;
 }
 function startConversation() {
-    isStarted = true;
-    speech = window.speechSynthesis;
-    startRecognition();
-    toggleButton.textContent = "会話を終了する";
-    toggleButton.classList.remove('btn-primary');
-    toggleButton.classList.add('btn-danger');
+    return __awaiter(this, void 0, void 0, function* () {
+        isStarted = true;
+        speech = window.speechSynthesis;
+        startRecognition();
+        toggleButton.textContent = "会話を終了する";
+        toggleButton.classList.remove('btn-primary');
+        toggleButton.classList.add('btn-danger');
+    });
 }
 function stopConversation() {
     isStarted = false;
@@ -181,11 +191,16 @@ function stopConversation() {
     toggleButton.classList.add('btn-primary');
 }
 toggleButton.addEventListener("click", (event) => {
-    console.log("button pressed");
     if (isStarted) {
         stopConversation();
     }
     else {
+        saveInputs();
+        const apiToken = apiTokenInput.value;
+        if (!apiToken) {
+            showToastMessage("There is no API token. Please enter your API token.");
+            return;
+        }
         startConversation();
     }
 });
@@ -197,7 +212,26 @@ class ResponseError extends Error {
         Object.setPrototypeOf(this, ResponseError.prototype);
     }
 }
+function showToastMessage(message) {
+    const toastElement = document.querySelector('.toast');
+    const toastBody = toastElement.querySelector('.toast-body');
+    const toast = new bootstrap.Toast(toastElement);
+    toastBody.textContent = message; // ここでメッセージを設定します
+    toast.show();
+}
+function saveInputs() {
+    localStorage.setItem("apiToken", apiTokenInput.value);
+    localStorage.setItem("systemRole", systemRoleInput.value);
+    localStorage.setItem("conversationCount", conversationCountInput.value);
+}
+function loadPreviousInputs() {
+    apiTokenInput.value = localStorage.getItem("apiToken") || "";
+    // systemRoleInput.value = localStorage.getItem("systemRole") || DEFAULT_SYSTEM_ROLE;
+    systemRoleInput.value = DEFAULT_SYSTEM_ROLE;
+    conversationCountInput.value = localStorage.getItem("conversationCount") || DEFAULT_CONVERSATION_COUNT.toString();
+}
 document.addEventListener("DOMContentLoaded", function () {
+    loadPreviousInputs();
     setupRecognitionIfNeeded();
 });
 export {};
