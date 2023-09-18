@@ -4,7 +4,9 @@
     "allowJs": true,
     "module": "esnext", 
     "target": "ES2015",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": [
     "src/*"

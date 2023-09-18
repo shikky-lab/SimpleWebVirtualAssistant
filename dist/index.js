@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+import { isEnglishSentence } from "./utils.js";
 const toggleButton = document.getElementById("toggleButton");
 const transcripts = document.getElementById("transcripts");
 const conversationCountInput = document.getElementById("conversationCount");
@@ -14,59 +15,30 @@ const apiTokenInput = document.getElementById("apiToken");
 const systemRoleInput = document.getElementById("systemRole");
 const startSoundElement = document.getElementById("startSound");
 const DEFAULT_CONVERSATION_COUNT = 10;
-const DEFAULT_SYSTEM_ROLE = "You are the user's friend. Your responses should be 30 words or less and use correct grammar.";
-let isStarted = false;
-// let recognition: SpeechRecognition;
-let recognition = null;
-let speech;
-let speechUtterance;
+const DEFAULT_SYSTEM_ROLE = "Your responses should be 30 words or less and use correct grammar.Regardless of the language inquired, please respond in English.";
+let isRecording = false;
 let transcriptList = [];
-function setupRecognitionIfNeeded() {
-    if (recognition) {
-        return;
-    }
-    const SpeechRecognition = window.speechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
-    recognition.addEventListener('result', (event) => __awaiter(this, void 0, void 0, function* () {
-        const transcript = event.results[0][0].transcript;
-        addUserMessage(transcript);
-        transcriptList.push({
-            role: "user",
-            content: transcript
-        });
-        recognition.stop();
-        const apiToken = apiTokenInput.value;
-        const apiResponse = yield inquireToChatGPT(createQueryMessage(), apiToken);
-        addAIMessage(apiResponse);
-        // トランスクリプトの内容を配列に追加
-        transcriptList.push({
-            role: "assistant",
-            content: apiResponse
-        });
-        // Speak API response
-        speechUtterance = new SpeechSynthesisUtterance(apiResponse);
-        speechUtterance.lang = "en-US";
-        speechUtterance.onend = () => {
-            // 読み上げが終了したら音声認識を再開
-            startRecognition();
-        };
-        speech.speak(speechUtterance);
-    }));
-    recognition.addEventListener("error", (event) => {
-        if (event.error === 'no-speech') {
-            //こうやって書けばno-speechだけ検出できるが、ひとまずはどのエラーでも会話を止める。
-        }
-        console.error(`音声認識エラーが発生しました: ${event.error}`);
-        stopConversation();
-    });
-    recognition.addEventListener('end', () => {
-        // if (isStarted) {
-        //     recognition.start();
-        // }
-    });
-}
+const generateResponse = (transcript) => __awaiter(void 0, void 0, void 0, function* () {
+    addUserMessage(transcript);
+    const apiToken = apiTokenInput.value;
+    const apiResponse = yield inquireToChatGPT(createQueryMessage(), apiToken);
+    processAfterResponse(apiResponse);
+});
+const processAfterResponse = (message) => {
+    addAIMessage(message);
+    speechMessage(message);
+};
+const speechMessage = (message) => {
+    // Speak API response
+    let speechUtterance = new SpeechSynthesisUtterance(message);
+    speechUtterance.lang = isEnglishSentence(message) ? "en" : "ja";
+    speechUtterance.onend = () => {
+        // 読み上げが終了したら音声認識を再開
+        startRecogntionWithUI();
+    };
+    let speech = window.speechSynthesis;
+    speech.speak(speechUtterance);
+};
 function appendMessageToChat(role, labelContent, messageText) {
     const chatContainer = document.querySelector('.chat-container');
     const messageDiv = document.createElement('div');
@@ -92,9 +64,17 @@ function appendMessageToChat(role, labelContent, messageText) {
 }
 function addUserMessage(message) {
     appendMessageToChat('user', 'YOU: ', message);
+    transcriptList.push({
+        role: "user",
+        content: message
+    });
 }
 function addAIMessage(message) {
     appendMessageToChat('ai', ' :AI', message);
+    transcriptList.push({
+        role: "assistant",
+        content: message
+    });
 }
 function playAudio(audio, timeout = 0) {
     return new Promise(res => {
@@ -105,13 +85,6 @@ function playAudio(audio, timeout = 0) {
         else { //再生が終わったらresolveする
             audio.onended = res;
         }
-    });
-}
-function startRecognition() {
-    return __awaiter(this, void 0, void 0, function* () {
-        setupRecognitionIfNeeded();
-        yield playAudio(startSoundElement, 300); //mobile版では音声認識が始まるとサウンドが途切れてしまうため、待機する
-        recognition.start();
     });
 }
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
@@ -151,7 +124,6 @@ function inquireToChatGPT(messages, token) {
                 console.log("There was a problem with the fetch operation:", error.message);
                 showToastMessage("There was a problem with the fetch operation. message=" + error.message);
             }
-            stopConversation();
             return "";
         }
     });
@@ -173,30 +145,19 @@ function createQueryMessage() {
 function getLastNTranscripts(n) {
     return transcriptList.slice(-n);
 }
-function stopRecognition() {
-    recognition.stop();
-    recognition = null;
-}
-function startConversation() {
-    return __awaiter(this, void 0, void 0, function* () {
-        isStarted = true;
-        speech = window.speechSynthesis;
-        startRecognition();
-        toggleButton.textContent = "会話を終了する";
-        toggleButton.classList.remove('btn-primary');
-        toggleButton.classList.add('btn-danger');
-    });
-}
-function stopConversation() {
-    isStarted = false;
-    stopRecognition();
+const stopWhisperRecogntionWithUI = () => {
+    stopWhisperRecogntion();
     toggleButton.textContent = "会話を開始する";
     toggleButton.classList.remove('btn-danger');
     toggleButton.classList.add('btn-primary');
-}
-toggleButton.addEventListener("click", (event) => {
-    if (isStarted) {
-        stopConversation();
+};
+const stopWhisperRecogntion = () => {
+    isRecording = false;
+    mediaRecorder.stop();
+};
+toggleButton.addEventListener("click", (event) => __awaiter(void 0, void 0, void 0, function* () {
+    if (isRecording) {
+        stopWhisperRecogntionWithUI();
     }
     else {
         const apiToken = apiTokenInput.value;
@@ -205,9 +166,9 @@ toggleButton.addEventListener("click", (event) => {
             return;
         }
         saveInputs();
-        startConversation();
+        startRecogntionWithUI();
     }
-});
+}));
 class ResponseError extends Error {
     constructor(message, response) {
         super(message);
@@ -234,9 +195,57 @@ function loadPreviousInputs() {
     systemRoleInput.value = DEFAULT_SYSTEM_ROLE;
     conversationCountInput.value = localStorage.getItem("conversationCount") || DEFAULT_CONVERSATION_COUNT.toString();
 }
+// whisperのサンプル
+let mediaRecorder;
+const startRecogntionWithUI = () => __awaiter(void 0, void 0, void 0, function* () {
+    yield playAudio(startSoundElement, 300); //mobile版では音声認識が始まるとサウンドが途切れてしまうため、待機する
+    startWhisperRecogntion();
+    toggleButton.textContent = "録音を終了する";
+    toggleButton.classList.remove('btn-primary');
+    toggleButton.classList.add('btn-danger');
+});
+const startWhisperRecogntion = () => {
+    let audioChunks = [];
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = event => {
+            audioChunks.push(event.data);
+        };
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            sendToWhisperAPI(audioBlob, generateResponse);
+        };
+        mediaRecorder.start();
+        isRecording = true;
+    })
+        .catch(error => {
+        console.error("Error accessing microphone:", error);
+        throw error;
+    });
+};
+function sendToWhisperAPI(audioBlob, callback) {
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'openai.wav'); // この例では .wav 形式で送信します。.mp3 が必要な場合、追加の変換が必要です。
+    formData.append('model', 'whisper-1');
+    const apiToken = apiTokenInput.value;
+    fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiToken}` // 実際のトークンに置き換えてください
+        },
+        body: formData
+    })
+        .then(response => response.json())
+        .then(data => {
+        console.log("transcript:" + (data === null || data === void 0 ? void 0 : data.text));
+        callback(data === null || data === void 0 ? void 0 : data.text);
+    })
+        .catch(error => {
+        console.error('Error:', error);
+    });
+}
 document.addEventListener("DOMContentLoaded", function () {
     console.log("content loaded");
     loadPreviousInputs();
-    setupRecognitionIfNeeded();
 });
-export {};
