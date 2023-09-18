@@ -136,8 +136,10 @@ function playAudio(audio){
 
 async function startRecognition() {
     setupRecognitionIfNeeded();
-    recognition.start();
+    console.log("sound start");
     await playAudio(startSoundElement);
+    console.log("sound finished");
+    recognition.start();
 }
 
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
@@ -279,6 +281,7 @@ function loadPreviousInputs(){
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+    console.log("content loaded");
     loadPreviousInputs();
     setupRecognitionIfNeeded();
 });

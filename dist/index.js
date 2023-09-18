@@ -106,8 +106,10 @@ function playAudio(audio) {
 function startRecognition() {
     return __awaiter(this, void 0, void 0, function* () {
         setupRecognitionIfNeeded();
-        recognition.start();
+        console.log("sound start");
         yield playAudio(startSoundElement);
+        console.log("sound finished");
+        recognition.start();
     });
 }
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
@@ -231,6 +233,7 @@ function loadPreviousInputs() {
     conversationCountInput.value = localStorage.getItem("conversationCount") || DEFAULT_CONVERSATION_COUNT.toString();
 }
 document.addEventListener("DOMContentLoaded", function () {
+    console.log("content loaded");
     loadPreviousInputs();
     setupRecognitionIfNeeded();
 });
