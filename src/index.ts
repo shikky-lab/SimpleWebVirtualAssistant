@@ -123,20 +123,21 @@ function addAIMessage(message) {
     appendMessageToChat('ai', ' :AI', message);
 }
 
-function playAudio(audio){
+function playAudio(audio:HTMLAudioElement,timeout:number=0){
   return new Promise(res=>{
     audio.play()
-    audio.onended = res
+    if(timeout) {
+        setTimeout(res,timeout)
+    }
+    else{//再生が終わったらresolveする
+        audio.onended = res
+    }
   })
 }
 
-
 async function startRecognition() {
     setupRecognitionIfNeeded();
-    console.log("sound start");
-    // await playAudio(startSoundElement);
-    startSoundElement.play()
-    console.log("sound finished");
+    await playAudio(startSoundElement,300); //mobile版では音声認識が始まるとサウンドが途切れてしまうため、待機する
     recognition.start();
 }
 

@@ -96,19 +96,21 @@ function addUserMessage(message) {
 function addAIMessage(message) {
     appendMessageToChat('ai', ' :AI', message);
 }
-function playAudio(audio) {
+function playAudio(audio, timeout = 0) {
     return new Promise(res => {
         audio.play();
-        audio.onended = res;
+        if (timeout) {
+            setTimeout(res, timeout);
+        }
+        else { //再生が終わったらresolveする
+            audio.onended = res;
+        }
     });
 }
 function startRecognition() {
     return __awaiter(this, void 0, void 0, function* () {
         setupRecognitionIfNeeded();
-        console.log("sound start");
-        // await playAudio(startSoundElement);
-        startSoundElement.play();
-        console.log("sound finished");
+        yield playAudio(startSoundElement, 300); //mobile版では音声認識が始まるとサウンドが途切れてしまうため、待機する
         recognition.start();
     });
 }
