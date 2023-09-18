@@ -1,9 +1,6 @@
 import IWindow from "./i-window";
 import * as Bootstrap from 'bootstrap';
 
-
-console.log("start script");
-
 const toggleButton = document.getElementById("toggleButton") as HTMLButtonElement;
 const transcripts = document.getElementById("transcripts") as HTMLDivElement;
 const conversationCountInput = document.getElementById("conversationCount") as HTMLInputElement;
@@ -137,7 +134,8 @@ function playAudio(audio){
 async function startRecognition() {
     setupRecognitionIfNeeded();
     console.log("sound start");
-    await playAudio(startSoundElement);
+    // await playAudio(startSoundElement);
+    startSoundElement.play()
     console.log("sound finished");
     recognition.start();
 }
@@ -234,13 +232,13 @@ toggleButton.addEventListener("click", (event) => {
     if (isStarted) {
         stopConversation();
     } else {
-        saveInputs();
-
         const apiToken = apiTokenInput.value;
         if (!apiToken) {
             showToastMessage("There is no API token. Please enter your API token.");
             return;
         }
+
+        saveInputs();
         startConversation();
     }
 });

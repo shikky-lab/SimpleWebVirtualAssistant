@@ -7,7 +7,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-console.log("start script");
 const toggleButton = document.getElementById("toggleButton");
 const transcripts = document.getElementById("transcripts");
 const conversationCountInput = document.getElementById("conversationCount");
@@ -107,7 +106,8 @@ function startRecognition() {
     return __awaiter(this, void 0, void 0, function* () {
         setupRecognitionIfNeeded();
         console.log("sound start");
-        yield playAudio(startSoundElement);
+        // await playAudio(startSoundElement);
+        startSoundElement.play();
         console.log("sound finished");
         recognition.start();
     });
@@ -197,12 +197,12 @@ toggleButton.addEventListener("click", (event) => {
         stopConversation();
     }
     else {
-        saveInputs();
         const apiToken = apiTokenInput.value;
         if (!apiToken) {
             showToastMessage("There is no API token. Please enter your API token.");
             return;
         }
+        saveInputs();
         startConversation();
     }
 });
