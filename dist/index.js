@@ -20,22 +20,22 @@ const DEFAULT_CONVERSATION_COUNT = 10;
 const DEFAULT_SYSTEM_ROLE = "Your responses should be 30 words or less and use correct grammar.Regardless of the language inquired, please respond in English.";
 let transcriptList = [];
 function appendMessageToChat(role, labelContent, messageText) {
-    const chatContainer = document.querySelector('.chat-container');
-    const messageDiv = document.createElement('div');
-    const labelSpan = document.createElement('span');
-    const textSpan = document.createElement('span');
+    const chatContainer = document.querySelector(".chat-container");
+    const messageDiv = document.createElement("div");
+    const labelSpan = document.createElement("span");
+    const textSpan = document.createElement("span");
     labelSpan.textContent = labelContent;
-    labelSpan.classList.add('label');
+    labelSpan.classList.add("label");
     textSpan.textContent = messageText;
-    textSpan.classList.add('text');
-    messageDiv.classList.add('chat-message');
-    if (role === 'user') {
-        messageDiv.classList.add('user-message');
+    textSpan.classList.add("text");
+    messageDiv.classList.add("chat-message");
+    if (role === "user") {
+        messageDiv.classList.add("user-message");
         messageDiv.appendChild(labelSpan);
         messageDiv.appendChild(textSpan);
     }
-    else if (role === 'ai') {
-        messageDiv.classList.add('ai-message');
+    else if (role === "ai") {
+        messageDiv.classList.add("ai-message");
         messageDiv.appendChild(textSpan);
         messageDiv.appendChild(labelSpan);
     }
@@ -43,17 +43,17 @@ function appendMessageToChat(role, labelContent, messageText) {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 function addUserMessage(message) {
-    appendMessageToChat('user', 'YOU: ', message);
+    appendMessageToChat("user", "YOU: ", message);
     transcriptList.push({
         role: "user",
-        content: message
+        content: message,
     });
 }
 function addAIMessage(message) {
-    appendMessageToChat('ai', ' :AI', message);
+    appendMessageToChat("ai", " :AI", message);
     transcriptList.push({
         role: "assistant",
-        content: message
+        content: message,
     });
 }
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
@@ -65,13 +65,13 @@ function inquireToChatGPT(messages, token) {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     model: "gpt-3.5-turbo",
                     messages: messages,
-                    temperature: 0.7
-                })
+                    temperature: 0.7,
+                }),
             });
             if (!response.ok) {
                 throw new Error("Network response was not ok");
@@ -91,7 +91,8 @@ function inquireToChatGPT(messages, token) {
             }
             else {
                 console.log("There was a problem with the fetch operation:", error.message);
-                showToastMessage("There was a problem with the fetch operation. message=" + error.message);
+                showToastMessage("There was a problem with the fetch operation. message=" +
+                    error.message);
             }
             return "";
         }
@@ -102,8 +103,8 @@ function createQueryMessage() {
         ? DEFAULT_CONVERSATION_COUNT
         : parseInt(conversationCountInput.value);
     const systemRole = {
-        "role": "system",
-        "content": systemRoleInput.value
+        role: "system",
+        content: systemRoleInput.value,
     };
     const queryList = getLastNTranscripts(n);
     queryList.unshift(systemRole);
@@ -123,8 +124,8 @@ class ResponseError extends Error {
     }
 }
 function showToastMessage(message) {
-    const toastElement = document.querySelector('.toast');
-    const toastBody = toastElement.querySelector('.toast-body');
+    const toastElement = document.querySelector(".toast");
+    const toastBody = toastElement.querySelector(".toast-body");
     const toast = new bootstrap.Toast(toastElement);
     toastBody.textContent = message; // ここでメッセージを設定します
     toast.show();
@@ -138,7 +139,9 @@ function loadPreviousInputs() {
     apiTokenInput.value = localStorage.getItem("apiToken") || "";
     // systemRoleInput.value = localStorage.getItem("systemRole") || DEFAULT_SYSTEM_ROLE;
     systemRoleInput.value = DEFAULT_SYSTEM_ROLE;
-    conversationCountInput.value = localStorage.getItem("conversationCount") || DEFAULT_CONVERSATION_COUNT.toString();
+    conversationCountInput.value =
+        localStorage.getItem("conversationCount") ||
+            DEFAULT_CONVERSATION_COUNT.toString();
 }
 document.addEventListener("DOMContentLoaded", () => {
     console.log("content loaded");
@@ -172,7 +175,12 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         saveInputs();
-        dictation.onClick();
+        try {
+            yield dictation.onClick();
+        }
+        catch (error) {
+            showToastMessage("Failed to start dictation" + error.message);
+        }
     }));
     abortButton.addEventListener("click", (event) => __awaiter(void 0, void 0, void 0, function* () {
         dictation.abortDictation();
