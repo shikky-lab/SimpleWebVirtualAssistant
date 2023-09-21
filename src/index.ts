@@ -242,3 +242,22 @@ document.addEventListener("DOMContentLoaded", () => {
     dictation.abortDictation();
   });
 });
+
+const adjustMiddleContentHeight = () => {
+  const topContentHeight = document.getElementById("top-content").offsetHeight;
+  const bottomContentHeight =
+    document.getElementById("bottom-content").offsetHeight;
+  const availableHeight =
+    window.innerHeight - topContentHeight - bottomContentHeight;
+
+  document.getElementById("transcripts").style.maxHeight =
+    availableHeight + "px";
+
+  //   console.log("new contentHeight:", availableHeight);
+};
+
+// ページ読み込み時に実行
+window.addEventListener("load", adjustMiddleContentHeight);
+
+// ウィンドウサイズが変わったときに実行
+window.addEventListener("resize", adjustMiddleContentHeight);
